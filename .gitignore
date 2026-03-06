@@ -1,0 +1,27 @@
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+
+# Build directory - NEVER commit this
+build/
+app/build/
+.gradle/
+
+# Local configuration
+local.properties
+*.iml
+
+# IDE files
+.idea/
+*.iws
+*.ipr
+.DS_Store
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services
+google-services.json
