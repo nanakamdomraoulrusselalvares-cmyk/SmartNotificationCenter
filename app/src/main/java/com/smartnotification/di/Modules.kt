@@ -28,7 +28,9 @@ object DatabaseModule {
             context,
             SmartNotificationDatabase::class.java,
             "smart_notification_db"
-        ).build()
+        )
+        .fallbackToDestructiveMigration() // Handle version 1 -> 2 migration by clearing DB
+        .build()
     }
 
     @Provides

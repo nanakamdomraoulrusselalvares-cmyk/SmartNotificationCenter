@@ -40,7 +40,8 @@ class BootReceiver : BroadcastReceiver() {
                         NotificationWorker.KEY_NOTIFICATION_ID to entity.id,
                         NotificationWorker.KEY_TITLE to entity.title,
                         NotificationWorker.KEY_MESSAGE to entity.message,
-                        NotificationWorker.KEY_PRIORITY to entity.priority
+                        NotificationWorker.KEY_PRIORITY to entity.priority,
+                        NotificationWorker.KEY_IS_ALARM to entity.isAlarm
                     )
                     val request = OneTimeWorkRequestBuilder<NotificationWorker>()
                         .setInitialDelay(delay, TimeUnit.MILLISECONDS)

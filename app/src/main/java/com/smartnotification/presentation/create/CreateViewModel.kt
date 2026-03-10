@@ -23,6 +23,7 @@ data class CreateUiState(
     val selectedTime: LocalTime = LocalTime.of(9, 0),
     val priority: Priority = Priority.MEDIUM,
     val repeatMode: RepeatMode = RepeatMode.NONE,
+    val isAlarm: Boolean = false,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val errorMessage: String? = null,
@@ -61,7 +62,8 @@ class CreateViewModel @Inject constructor(
                         selectedDate = it.scheduledTime.toLocalDate(),
                         selectedTime = it.scheduledTime.toLocalTime(),
                         priority = it.priority,
-                        repeatMode = it.repeatMode
+                        repeatMode = it.repeatMode,
+                        isAlarm = it.isAlarm
                     )
                 }
             }
@@ -74,6 +76,7 @@ class CreateViewModel @Inject constructor(
     fun onTimeChange(value: LocalTime) = _uiState.update { it.copy(selectedTime = value) }
     fun onPriorityChange(value: Priority) = _uiState.update { it.copy(priority = value) }
     fun onRepeatModeChange(value: RepeatMode) = _uiState.update { it.copy(repeatMode = value) }
+    fun onIsAlarmChange(value: Boolean) = _uiState.update { it.copy(isAlarm = value) }
 
     fun save() {
         val s = _uiState.value
@@ -101,7 +104,8 @@ class CreateViewModel @Inject constructor(
             scheduledTime = scheduledTime,
             priority = s.priority,
             repeatMode = s.repeatMode,
-            status = NotificationStatus.SCHEDULED
+            status = NotificationStatus.SCHEDULED,
+            isAlarm = s.isAlarm
         )
 
         viewModelScope.launch {

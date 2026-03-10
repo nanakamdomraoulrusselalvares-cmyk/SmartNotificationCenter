@@ -13,6 +13,7 @@ data class NotificationEntity(
     val priority: String,       // LOW / MEDIUM / HIGH
     val repeatMode: String,     // NONE / DAILY / WEEKLY
     val status: String,         // SCHEDULED / TRIGGERED / CANCELLED
+    val isAlarm: Boolean = false,
     val workerId: String? = null
 )
 

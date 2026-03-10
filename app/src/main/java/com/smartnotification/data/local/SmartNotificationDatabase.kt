@@ -15,7 +15,7 @@ import com.smartnotification.data.local.entity.PrioritySettingsEntity
         HistoryEntity::class,
         PrioritySettingsEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class SmartNotificationDatabase : RoomDatabase() {

@@ -1,19 +1,32 @@
 package com.smartnotification.presentation.dashboard
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.smartnotification.domain.model.NotificationItem
@@ -44,99 +57,191 @@ fun DashboardScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            val infiniteTransition = rememberInfiniteTransition(label = "FABPulse")
+            val fabScale by infiniteTransition.animateFloat(
+                initialValue = 1f,
+                targetValue = 1.05f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(1000, easing = FastOutSlowInEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "FABScale"
+            )
+
+            LargeFloatingActionButton(
                 onClick = onCreateClick,
-                icon = { Icon(Icons.Filled.Add, "Create") },
-                text = { Text("New") }
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = CircleShape,
+                modifier = Modifier.scale(fabScale)
+            ) {
+                Icon(Icons.Filled.Add, "Create", modifier = Modifier.size(32.dp))
+            }
+        },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.NotificationsActive,
+                            null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            "SmartCenter",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = (-0.5).sp
+                            )
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* TODO: Notification Log */ }) {
+                        Icon(Icons.Filled.NotificationsNone, null)
+                    }
+                }
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            // Header
-            Text(
-                "Smart Notifications",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 8.dp)
-            )
-
-            // Search bar
-            OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChange,
-                placeholder = { Text("Search notifications…") },
-                leadingIcon = { Icon(Icons.Filled.Search, null) },
-                trailingIcon = {
-                    if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
-                            Icon(Icons.Filled.Clear, "Clear")
-                        }
-                    }
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(16.dp),
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            // Search & Filter Section
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-
-            Spacer(Modifier.height(8.dp))
-
-            // Priority filter chips
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    FilterChip(
-                        selected = uiState.selectedPriority == null,
-                        onClick = { viewModel.onPriorityFilterChange(null) },
-                        label = { Text("All") }
-                    )
-                }
-                items(Priority.values()) { priority ->
-                    FilterChip(
-                        selected = uiState.selectedPriority == priority,
-                        onClick = { viewModel.onPriorityFilterChange(priority) },
-                        label = { Text(priority.displayName) }
-                    )
-                }
+                SearchBar(
+                    query = uiState.searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChange
+                )
+
+                FilterRow(
+                    selectedPriority = uiState.selectedPriority,
+                    onPrioritySelected = viewModel::onPriorityFilterChange
+                )
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            if (uiState.isLoading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (uiState.notifications.isEmpty()) {
-                EmptyStateUI(
-                    title = "No notifications yet",
-                    subtitle = "Tap the + button to create your first scheduled notification"
-                )
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(
-                        items = uiState.notifications,
-                        key = { it.id }
-                    ) { item ->
-                        NotificationCard(
-                            item = item,
-                            onEdit = { onEditClick(item.id) },
-                            onDelete = { viewModel.deleteItem(item) },
-                            onCancel = { viewModel.cancelItem(item) }
+            // Notifications List
+            AnimatedContent(
+                targetState = uiState.isLoading to uiState.notifications.isEmpty(),
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(500)) togetherWith fadeOut(animationSpec = tween(400))
+                },
+                label = "DashboardList"
+            ) { (loading, empty) ->
+                when {
+                    loading -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(strokeWidth = 3.dp)
+                        }
+                    }
+                    empty -> {
+                        EmptyStateUI(
+                            title = "All clear!",
+                            subtitle = "No scheduled notifications or alarms. Tap + to start."
                         )
                     }
-                    item { Spacer(Modifier.height(80.dp)) }
+                    else -> {
+                        LazyColumn(
+                            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 100.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            itemsIndexed(
+                                items = uiState.notifications,
+                                key = { _, item -> item.id }
+                            ) { index, item ->
+                                val state = remember { MutableTransitionState(false) }.apply { targetState = true }
+                                AnimatedVisibility(
+                                    visibleState = state,
+                                    enter = fadeIn(animationSpec = tween(500, delayMillis = index * 50)) +
+                                            slideInVertically(
+                                                initialOffsetY = { 30 },
+                                                animationSpec = tween(500, delayMillis = index * 50)
+                                            ),
+                                    modifier = Modifier.animateItem()
+                                ) {
+                                    NotificationCard(
+                                        item = item,
+                                        onEdit = { onEditClick(item.id) },
+                                        onDelete = { viewModel.deleteItem(item) },
+                                        onCancel = { viewModel.cancelItem(item) }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit
+) {
+    TextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Search notifications...") },
+        leadingIcon = { Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.primary) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Filled.Close, null)
+                }
+            }
+        },
+        singleLine = true,
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            disabledContainerColor = Color.Transparent,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
+        ),
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun FilterRow(
+    selectedPriority: Priority?,
+    onPrioritySelected: (Priority?) -> Unit
+) {
+    val priorities = remember { Priority.entries }
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        item {
+            FilterChip(
+                selected = selectedPriority == null,
+                onClick = { onPrioritySelected(null) },
+                label = { Text("All") },
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        items(priorities) { priority ->
+            FilterChip(
+                selected = selectedPriority == priority,
+                onClick = { onPrioritySelected(priority) },
+                label = { Text(priority.displayName) },
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+    }
+}
+
 @Composable
 private fun NotificationCard(
     item: NotificationItem,
@@ -144,104 +249,121 @@ private fun NotificationCard(
     onDelete: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val formatter = DateTimeFormatter.ofPattern("MMM d, yyyy  HH:mm")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    val dateFormatter = DateTimeFormatter.ofPattern("EEE, MMM d")
     var showMenu by remember { mutableStateOf(false) }
 
+    val containerColor = if (item.isAlarm) {
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+    }
+
     Card(
-        onClick = onEdit,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = item.scheduledTime.format(timeFormatter),
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary,
+                            letterSpacing = (-1).sp
+                        )
+                    )
+                    Text(
+                        text = item.scheduledTime.format(dateFormatter),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (item.isAlarm) Icons.Filled.Alarm else Icons.Filled.Notifications,
+                        contentDescription = null,
+                        tint = if (item.isAlarm) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                IconButton(onClick = { showMenu = true }) {
+                    Icon(Icons.Filled.MoreVert, "Options", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        leadingIcon = { Icon(Icons.Filled.Edit, null) },
+                        onClick = { showMenu = false; onEdit() }
+                    )
+                    if (item.status == NotificationStatus.SCHEDULED) {
+                        DropdownMenuItem(
+                            text = { Text("Cancel") },
+                            leadingIcon = { Icon(Icons.Filled.Cancel, null) },
+                            onClick = { showMenu = false; onCancel() }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        leadingIcon = { Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = { showMenu = false; onDelete() }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            Text(
+                item.title,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            
+            if (item.message.isNotEmpty()) {
+                Text(
+                    item.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Filled.MoreVert, "Options")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            leadingIcon = { Icon(Icons.Filled.Edit, null) },
-                            onClick = { showMenu = false; onEdit() }
-                        )
-                        if (item.status == NotificationStatus.SCHEDULED) {
-                            DropdownMenuItem(
-                                text = { Text("Cancel") },
-                                leadingIcon = { Icon(Icons.Filled.Cancel, null) },
-                                onClick = { showMenu = false; onCancel() }
-                            )
-                        }
-                        DropdownMenuItem(
-                            text = { Text("Delete") },
-                            leadingIcon = { Icon(Icons.Filled.Delete, null) },
-                            onClick = { showMenu = false; onDelete() }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (item.repeatMode != com.smartnotification.domain.model.RepeatMode.NONE) {
+                        Icon(
+                            Icons.Filled.Repeat,
+                            null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.secondary
                         )
                     }
+                    PriorityChip(item.priority)
                 }
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            Text(
-                item.message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(Modifier.height(10.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Icon(
-                    Icons.Filled.Schedule,
-                    null,
-                    modifier = Modifier.size(14.dp),
-                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-                Text(
-                    item.scheduledTime.format(formatter),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PriorityChip(item.priority)
                 StatusChip(item.status)
-                if (item.repeatMode.name != "NONE") {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.secondaryContainer
-                    ) {
-                        Text(
-                            "↺ ${item.repeatMode.displayName}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                }
             }
         }
     }

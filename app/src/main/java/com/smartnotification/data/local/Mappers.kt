@@ -18,6 +18,7 @@ fun NotificationEntity.toDomain(): NotificationItem = NotificationItem(
     priority = Priority.valueOf(priority),
     repeatMode = RepeatMode.valueOf(repeatMode),
     status = NotificationStatus.valueOf(status),
+    isAlarm = isAlarm,
     workerId = workerId
 )
 
@@ -32,6 +33,7 @@ fun NotificationItem.toEntity(): NotificationEntity = NotificationEntity(
     priority = priority.name,
     repeatMode = repeatMode.name,
     status = status.name,
+    isAlarm = isAlarm,
     workerId = workerId
 )
 

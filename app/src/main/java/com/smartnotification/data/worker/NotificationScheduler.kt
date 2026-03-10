@@ -29,7 +29,8 @@ class NotificationScheduler @Inject constructor(
             NotificationWorker.KEY_NOTIFICATION_ID to item.id,
             NotificationWorker.KEY_TITLE to item.title,
             NotificationWorker.KEY_MESSAGE to item.message,
-            NotificationWorker.KEY_PRIORITY to item.priority.name
+            NotificationWorker.KEY_PRIORITY to item.priority.name,
+            NotificationWorker.KEY_IS_ALARM to item.isAlarm
         )
 
         val request = when (item.repeatMode) {
@@ -62,18 +63,22 @@ class NotificationScheduler @Inject constructor(
                     }
             }
             RepeatMode.NONE -> {
-                OneTimeWorkRequestBuilder<NotificationWorker>()
+                val builder = OneTimeWorkRequestBuilder<NotificationWorker>()
                     .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                     .setInputData(data)
                     .addTag("notification_${item.id}")
-                    .build()
-                    .also {
-                        workManager.enqueueUniqueWork(
-                            "notification_${item.id}",
-                            ExistingWorkPolicy.REPLACE,
-                            it
-                        )
-                    }
+                
+                if (item.isAlarm) {
+                    builder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                }
+
+                builder.build().also {
+                    workManager.enqueueUniqueWork(
+                        "notification_${item.id}",
+                        ExistingWorkPolicy.REPLACE,
+                        it
+                    )
+                }
             }
         }
 

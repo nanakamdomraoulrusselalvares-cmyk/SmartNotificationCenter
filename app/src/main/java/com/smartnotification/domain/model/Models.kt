@@ -3,7 +3,7 @@ package com.smartnotification.domain.model
 import java.time.LocalDateTime
 
 /**
- * Domain model for a scheduled notification.
+ * Domain model for a scheduled notification or alarm.
  */
 data class NotificationItem(
     val id: Int = 0,
@@ -13,6 +13,7 @@ data class NotificationItem(
     val priority: Priority,
     val repeatMode: RepeatMode,
     val status: NotificationStatus,
+    val isAlarm: Boolean = false,
     val workerId: String? = null
 )
 

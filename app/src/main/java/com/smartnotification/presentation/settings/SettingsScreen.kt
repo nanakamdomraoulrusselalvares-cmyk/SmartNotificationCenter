@@ -2,7 +2,6 @@ package com.smartnotification.presentation.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -10,7 +9,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.clickable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -102,37 +103,61 @@ fun SettingsScreen(
                 SettingInfoRow(
                     icon = Icons.Filled.Code,
                     title = "Smart Notification Center",
-                    subtitle = "Built with Jetpack Compose + Room + WorkManager"
+                    subtitle = "Built with Jetpack Compose + Kotlin"
                 )
+            }
+
+            // Developer Info
+            item {
+                Spacer(Modifier.height(32.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Developed by",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                    Text(
+                        "NANA KAMDOM RAOUL",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.height(16.dp))
             }
         }
     }
 
     if (showClearDialog) {
         AlertDialog(
-            onDismissRequest = { showClearDialog = false },
+            onDismissRequest = { },
             title = { Text("Clear All Notifications") },
             text = { Text("This will cancel and delete all scheduled notifications. This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.clearAllNotifications(); showClearDialog = false }) {
+                TextButton(onClick = { viewModel.clearAllNotifications(); }) {
                     Text("Clear", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { showClearDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { }) { Text("Cancel") } }
         )
     }
 
     if (showResetDialog) {
         AlertDialog(
-            onDismissRequest = { showResetDialog = false },
+            onDismissRequest = { },
             title = { Text("Reset App Data") },
             text = { Text("This will delete ALL notifications and history. This cannot be undone.") },
             confirmButton = {
-                TextButton(onClick = { viewModel.resetAppData(); showResetDialog = false }) {
+                TextButton(onClick = { viewModel.resetAppData(); }) {
                     Text("Reset", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { showResetDialog = false }) { Text("Cancel") } }
+            dismissButton = { TextButton(onClick = { }) { Text("Cancel") } }
         )
     }
 }
